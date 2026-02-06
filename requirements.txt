@@ -1,0 +1,10 @@
+customtkinter>=5.2
+tkinterdnd2>=0.3
+PyMuPDF>=1.24
+openai>=1.60
+notion-client>=2.2
+aiohttp>=3.9
+Pillow>=10.0
+python-dotenv>=1.0
+tqdm>=4.66
+tenacity>=8.2
