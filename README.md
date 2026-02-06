@@ -4,6 +4,9 @@ Turn lecture slides into AI-explained Notion pages — automatically.
 
 Drop a PDF, pick a course, and Tutor processes every slide through OpenAI, generates structured explanations with proper math formatting, then pushes everything to Notion — complete with a lecture summary and practice exam questions.
 
+**Example output (Notion page):**
+- Reinforcement Learning — Lecture 2: https://pie-snowman-06c.notion.site/Lecture2-2ff9e9b4f80d81b1a9afc7df1d264d01?source=copy_link
+
 ![Launcher](screenshots/launcher.png)
 
 ## Features
@@ -27,6 +30,8 @@ Drop a PDF, pick a course, and Tutor processes every slide through OpenAI, gener
 ![Slide Selector](screenshots/slide_selector.png)
 
 5. **Processing** — each slide is analyzed sequentially (for conversation context), uploaded to Notion in parallel
+
+> If you exclude slides during review, Tutor still uploads those slide images to Notion so the lecture page is a complete, single source of truth. Excluded slides simply won’t include an AI explanation.
 6. **Result** — a new Notion page appears under your course with every slide image, its explanation, a summary, and practice questions
 
 ## Setup
