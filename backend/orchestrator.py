@@ -5,12 +5,11 @@ Orchestration pipeline – process a PDF end-to-end and push to Notion.
 import asyncio
 import logging
 import tempfile
-from typing import Dict, Any, List, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, Any, List, Tuple, Set
 
 from openai import AsyncOpenAI
 from tqdm import tqdm
-
-from config import ASTNode, PipelineContext
 from backend.openai_client import (
     analyze_image_structured_async,
     generate_lecture_summary_async,
@@ -27,6 +26,20 @@ from backend.pdf_parser import get_pdf_page_count, extract_pdf_pages_to_dir
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class PipelineContext:
+    """Bundles all runtime state needed by the processing pipeline."""
+
+    pdf_path: str
+    course_name: str
+    instruction: str
+    notion_api_key: str
+    notion_page_id: str
+    conversation_id: str
+    excluded_pages: Set[int] = field(default_factory=set)
+    model: str = "gpt-5.2"
+
+
 # ---------------------------------------------------------------------------
 # Single-slide processing
 # ---------------------------------------------------------------------------
@@ -40,6 +53,7 @@ async def _process_single_slide(
     page_num: int,
     conversation_id: str,
     course_name: str,
+    model: str = "gpt-5.2",
 ) -> Tuple[int, List[Dict[str, Any]]]:
     """Process one slide: upload image + analyse via OpenAI in parallel."""
     upload_task = upload_image_to_notion_async(notion_api_key, image_path)
@@ -49,6 +63,7 @@ async def _process_single_slide(
         instruction,
         conversation_id=conversation_id,
         course_name=course_name,
+        model=model,
     )
 
     file_upload_id, ast = await asyncio.gather(upload_task, analyze_task)
@@ -112,6 +127,7 @@ async def process_pdf(
                         page_num,
                         ctx.conversation_id,
                         ctx.course_name,
+                        model=ctx.model,
                     )
 
                 results.append(result)
@@ -128,6 +144,7 @@ async def process_pdf(
         openai_client,
         ctx.conversation_id,
         ctx.course_name,
+        model=ctx.model,
     )
     summary_title = {
         "object": "block",
@@ -144,6 +161,7 @@ async def process_pdf(
         openai_client,
         ctx.conversation_id,
         ctx.course_name,
+        model=ctx.model,
     )
     questions_title = {
         "object": "block",

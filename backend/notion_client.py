@@ -11,9 +11,17 @@ import aiohttp
 from notion_client import Client as NotionClient
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from config import ASTNode, NOTION_CHUNK_SIZE, RETRY_ATTEMPTS, RETRY_WAIT_SECONDS
+
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Internal constants
+# ---------------------------------------------------------------------------
+
+_CHUNK_SIZE = 50
+_RETRY_ATTEMPTS = 3
+_RETRY_WAIT_SECONDS = 2  # base for exponential back-off
 
 
 # ---------------------------------------------------------------------------
@@ -31,8 +39,8 @@ def chunked(xs: List[Any], n: int) -> List[List[Any]]:
 # ---------------------------------------------------------------------------
 
 _RETRY = dict(
-    stop=stop_after_attempt(RETRY_ATTEMPTS),
-    wait=wait_exponential(multiplier=RETRY_WAIT_SECONDS, min=1, max=30),
+    stop=stop_after_attempt(_RETRY_ATTEMPTS),
+    wait=wait_exponential(multiplier=_RETRY_WAIT_SECONDS, min=1, max=30),
     retry=retry_if_exception_type(Exception),
     reraise=True,
     before_sleep=lambda rs: logger.warning(
@@ -108,7 +116,7 @@ async def append_children_to_notion_async(
     api_key: str,
     page_id: str,
     children: List[Dict[str, Any]],
-    chunk_size: int = NOTION_CHUNK_SIZE,
+    chunk_size: int = _CHUNK_SIZE,
 ) -> None:
     """Append children blocks to a Notion page (chunked to stay under limits)."""
     headers = {
@@ -207,7 +215,7 @@ def inlines_to_rich_text(inlines: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-def ast_to_notion_children(ast: ASTNode) -> List[Dict[str, Any]]:
+def ast_to_notion_children(ast: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Convert a semantic AST to a list of Notion block children.
 

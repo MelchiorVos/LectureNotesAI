@@ -6,21 +6,21 @@ import json
 import base64
 import logging
 import mimetypes
-from functools import lru_cache
 from typing import Any, Dict
 
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from config import (
-    ASTNode,
-    PROMPTS_DIR,
-    OPENAI_MODEL,
-    RETRY_ATTEMPTS,
-    RETRY_WAIT_SECONDS,
-)
+from prompts.system import SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Retry policy (internal)
+# ---------------------------------------------------------------------------
+
+_RETRY_ATTEMPTS = 3
+_RETRY_WAIT_SECONDS = 2  # base for exponential back-off
 
 # ---------------------------------------------------------------------------
 # Image helpers
@@ -38,20 +38,13 @@ def image_path_to_data_url(image_path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# System prompt (loaded once from disk)
+# System prompt
 # ---------------------------------------------------------------------------
-
-
-@lru_cache(maxsize=None)
-def _load_prompt_template() -> str:
-    """Read the system prompt template from prompts/system.txt."""
-    path = PROMPTS_DIR / "system.txt"
-    return path.read_text(encoding="utf-8")
 
 
 def get_system_prompt(course_name: str) -> str:
     """Return the system prompt with the course name interpolated."""
-    return _load_prompt_template().format(course_name=course_name)
+    return SYSTEM_PROMPT.replace('[COURSE_NAME]', course_name)
 
 
 # ---------------------------------------------------------------------------
@@ -112,8 +105,8 @@ def build_ast_schema() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 _RETRY = dict(
-    stop=stop_after_attempt(RETRY_ATTEMPTS),
-    wait=wait_exponential(multiplier=RETRY_WAIT_SECONDS, min=1, max=30),
+    stop=stop_after_attempt(_RETRY_ATTEMPTS),
+    wait=wait_exponential(multiplier=_RETRY_WAIT_SECONDS, min=1, max=30),
     retry=retry_if_exception_type(Exception),
     reraise=True,
     before_sleep=lambda rs: logger.warning(
@@ -129,8 +122,8 @@ async def analyze_image_structured_async(
     instruction: str,
     conversation_id: str,
     course_name: str,
-    model: str = OPENAI_MODEL,
-) -> ASTNode:
+    model: str = "gpt-5.2",
+) -> Dict[str, Any]:
     """Analyze a slide image and return a structured AST."""
     data_url = image_path_to_data_url(image_path)
     schema = build_ast_schema()
@@ -169,8 +162,8 @@ async def generate_lecture_summary_async(
     client: AsyncOpenAI,
     conversation_id: str,
     course_name: str,
-    model: str = OPENAI_MODEL,
-) -> ASTNode:
+    model: str = "gpt-5.2",
+) -> Dict[str, Any]:
     """Generate a lecture summary using the conversation history."""
     schema = build_ast_schema()
 
@@ -211,8 +204,8 @@ async def generate_exam_questions_async(
     client: AsyncOpenAI,
     conversation_id: str,
     course_name: str,
-    model: str = OPENAI_MODEL,
-) -> ASTNode:
+    model: str = "gpt-5.2",
+) -> Dict[str, Any]:
     """Generate exam-style questions from the lecture conversation."""
     schema = build_ast_schema()
 

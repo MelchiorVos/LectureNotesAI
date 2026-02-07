@@ -7,12 +7,12 @@ from typing import Generator
 
 import fitz  # PyMuPDF
 
-from config import PDF_ZOOM
+_PDF_ZOOM = 2.0
 
 
 def extract_pdf_pages_as_images(
     pdf_path: str,
-    zoom: float = PDF_ZOOM,
+    zoom: float = _PDF_ZOOM,
 ) -> Generator[str, None, None]:
     """
     Yield temporary image paths for each page in a PDF.
@@ -45,7 +45,7 @@ def get_pdf_page_count(pdf_path: str) -> int:
 def extract_pdf_pages_to_dir(
     pdf_path: str,
     output_dir: str,
-    zoom: float = PDF_ZOOM,
+    zoom: float = _PDF_ZOOM,
 ) -> list[str]:
     """
     Extract all PDF pages as images into *output_dir*.

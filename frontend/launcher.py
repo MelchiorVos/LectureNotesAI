@@ -9,7 +9,7 @@ from typing import Optional, List
 import customtkinter as ctk
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
-from config import discover_courses
+
 from frontend.theme import (
     ACCENT,
     ACCENT_HOVER,
@@ -21,10 +21,25 @@ from frontend.theme import (
 )
 
 
+AVAILABLE_MODELS = ["gpt-5.2", "gpt-5-mini"]
+
+
+def discover_courses() -> list[str]:
+    """Return sorted course names derived from NOTION_PAGE_* env vars."""
+    import os
+    courses = []
+    for key in os.environ:
+        if key.startswith("NOTION_PAGE_"):
+            name = key.removeprefix("NOTION_PAGE_").replace("_", " ").title()
+            courses.append(name)
+    return sorted(courses)
+
+
 @dataclass
 class LauncherResult:
     pdf_path: str
     course_name: str
+    model: str
     select_slides: bool
 
 
@@ -156,6 +171,33 @@ class LauncherApp:
         )
         self._course_dropdown.pack(anchor="w", pady=(0, 16))
 
+        # Model dropdown
+        ctk.CTkLabel(
+            container,
+            text="Model",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=FG,
+        ).pack(anchor="w", pady=(0, 4))
+
+        self._model_var = ctk.StringVar(value=AVAILABLE_MODELS[0])
+        self._model_dropdown = ctk.CTkOptionMenu(
+            container,
+            variable=self._model_var,
+            values=AVAILABLE_MODELS,
+            width=300,
+            height=36,
+            font=ctk.CTkFont(size=13),
+            fg_color="#F1F5F9",
+            button_color="#E2E8F0",
+            button_hover_color="#CBD5E1",
+            text_color=FG,
+            dropdown_fg_color=BG,
+            dropdown_text_color=FG,
+            dropdown_hover_color="#F1F5F9",
+            corner_radius=8,
+        )
+        self._model_dropdown.pack(anchor="w", pady=(0, 16))
+
         # Slide selector checkbox
         self._exclude_var = ctk.BooleanVar(value=True)
         self._exclude_check = ctk.CTkCheckBox(
@@ -242,6 +284,7 @@ class LauncherApp:
         self.result = LauncherResult(
             pdf_path=self._pdf_path,
             course_name=self._course_var.get(),
+            model=self._model_var.get(),
             select_slides=self._exclude_var.get(),
         )
         self.root.destroy()
